@@ -13,7 +13,7 @@ import numpy as np
 ## that has a Request Method: of POST instead of GET and it has a request URL and payload that makes sense
 POST_url = "https://msd.wd5.myworkdayjobs.com/wday/cxs/msd/SearchJobs/jobs"
 ind_job_url = "https://msd.wd5.myworkdayjobs.com/en-US/SearchJobs/details/"
-payload = {"appliedFacets": {}, "limit": 20, "offset": 20, "searchText": ""}
+payload = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": ""}
 
 
 def today_jobs(POST_url, ind_job_url,payload):
@@ -58,7 +58,6 @@ def today_jobs(POST_url, ind_job_url,payload):
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
     location = posted_recently[posted_recently["location"].str.contains('USA - Pennsylvania|USA - North Carolina|Location|USA - REMOTE', case=False, na=False)]
     return location
-    location.to_csv('jobs_update.csv')
 
 import smtplib
 from email.message import EmailMessage
@@ -73,13 +72,13 @@ def send_email_report(df):
     msg = EmailMessage()
     msg['Subject'] = f"Merck Workday Jobs Report – {datetime.now().strftime('%Y-%m-%d')}"
     msg['From'] = 'bdev1238@gmail.com'
-    msg['To'] = "bdev1238@gmail.com"
+    msg['To'] = "benjamin.devlin@duke.edu"
     msg.set_content(body)
 
     # Attach CSV if there are new postings
     if not df.empty:
         csv_data = df.to_csv(index=False)
-        msg.add_attachment(csv_data, filename="workday_jobs_today.csv", subtype="csv")
+        msg.add_attachment(csv_data, filename="merck_workday_jobs_today.csv", subtype="csv")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login('bdev1238@gmail.com', 'macw dblk fqmc qldy')

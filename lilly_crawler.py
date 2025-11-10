@@ -3,7 +3,6 @@ import os
 import json
 from multiprocessing import Process, Array
 import sys
-import util
 import requests
 import pandas as pd
 import numpy as np
@@ -46,17 +45,19 @@ def today_jobs(POST_url, ind_job_url,payload):
         r = requests.post(url, json=payload, headers=headers)
         data = r.json()
         for job in data["jobPostings"]:
-            jobs.append({
-                "title": job.get("title"),
-                "location": job.get("locationsText", ""),
-                "postedOn": job.get("postedOn", ""),
-                "url": ind_job_url+ job['externalPath'].split('/')[-1]
-                })
+            try:
+                jobs.append({
+                    "title": job.get("title"),
+                    "location": job.get("locationsText", ""),
+                    "postedOn": job.get("postedOn", ""),
+                    "url": ind_job_url+ job['externalPath'].split('/')[-1]
+                    })
+            except:
+                pass
         
 
     pd.set_option('display.max_colwidth', 800)
     df = pd.DataFrame(jobs)
-    df.to_csv('C:\\Users\\Ben\\Desktop\\WebCrawler\\jobs.csv')
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
     location = posted_recently[posted_recently["location"].str.contains('US: USA Remote|US: Research Triangle Park NC', case=False, na=False)]
     return location
@@ -81,7 +82,7 @@ def send_email_report(df):
     # Attach CSV if there are new postings
     if not df.empty:
         csv_data = df.to_csv(index=False)
-        msg.add_attachment(csv_data, filename="workday_jobs_today.csv", subtype="csv")
+        msg.add_attachment(csv_data, filename="eli_lilly_workday_jobs_today.csv", subtype="csv")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login('bdev1238@gmail.com', 'macw dblk fqmc qldy')
