@@ -1,0 +1,89 @@
+from urllib.request import Request, urlopen, HTTPError
+import os
+import json
+from multiprocessing import Process, Array
+import sys
+import util
+import requests
+import pandas as pd
+import numpy as np
+
+## to find this, right click and 'inspect element' on the workday page in your browser. from there, navigate to the network tab
+## and ctrl + r to refresh the page. you should see a whole bunch of requests come in. sort by Fetch/XHR and click through them until you see one 
+## that has a Request Method: of POST instead of GET and it has a request URL and payload that makes sense
+POST_url = "https://msd.wd5.myworkdayjobs.com/wday/cxs/msd/SearchJobs/jobs"
+ind_job_url = "https://msd.wd5.myworkdayjobs.com/en-US/SearchJobs/details/"
+payload = {"appliedFacets": {}, "limit": 20, "offset": 20, "searchText": ""}
+
+
+def today_jobs(POST_url, ind_job_url,payload):
+
+    url = POST_url
+    payload = payload
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    r = requests.post(url, json=payload, headers=headers)
+
+    offsets = np.arange(0, r.json()['total'], 20)
+    jobs = []
+    for offset in offsets:
+        
+        url = POST_url
+        payload['offset'] = float(offset)
+        payload = payload
+        headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0"
+        }
+        
+        
+        r = requests.post(url, json=payload, headers=headers)
+        data = r.json()
+        for job in data["jobPostings"]:
+            jobs.append({
+                "title": job.get("title"),
+                "location": job.get("locationsText", ""),
+                "postedOn": job.get("postedOn", ""),
+                "url": ind_job_url+ job['externalPath'].split('/')[-1]
+                })
+        
+
+    pd.set_option('display.max_colwidth', 800)
+    df = pd.DataFrame(jobs)
+    posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
+    location = posted_recently[posted_recently["location"].str.contains('USA - Pennsylvania|USA - North Carolina|Location|USA - REMOTE', case=False, na=False)]
+    return location
+    location.to_csv('jobs_update.csv')
+
+import smtplib
+from email.message import EmailMessage
+from datetime import datetime
+
+def send_email_report(df):
+    if df.empty:
+        body = "No new job postings today."
+    else:
+        body = f"{len(df)} new job(s) posted today:\n\n" + "\n".join(df['title'].tolist())
+
+    msg = EmailMessage()
+    msg['Subject'] = f"Merck Workday Jobs Report – {datetime.now().strftime('%Y-%m-%d')}"
+    msg['From'] = 'bdev1238@gmail.com'
+    msg['To'] = "bdev1238@gmail.com"
+    msg.set_content(body)
+
+    # Attach CSV if there are new postings
+    if not df.empty:
+        csv_data = df.to_csv(index=False)
+        msg.add_attachment(csv_data, filename="workday_jobs_today.csv", subtype="csv")
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login('bdev1238@gmail.com', 'macw dblk fqmc qldy')
+        smtp.send_message(msg)
+
+# Call this after your DataFrame is ready:
+send_email_report(today_jobs(POST_url,ind_job_url, payload))
