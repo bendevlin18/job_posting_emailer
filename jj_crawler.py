@@ -7,11 +7,12 @@ import requests
 import pandas as pd
 import numpy as np
 
+
 ## to find this, right click and 'inspect element' on the workday page in your browser. from there, navigate to the network tab
 ## and ctrl + r to refresh the page. you should see a whole bunch of requests come in. sort by Fetch/XHR and click through them until you see one 
 ## that has a Request Method: of POST instead of GET and it has a request URL and payload that makes sense
-POST_url = "https://msd.wd5.myworkdayjobs.com/wday/cxs/msd/SearchJobs/jobs"
-ind_job_url = "https://msd.wd5.myworkdayjobs.com/en-US/SearchJobs/details/"
+POST_url = "https://jj.wd5.myworkdayjobs.com/wday/cxs/jj/JJ/jobs"
+ind_job_url = "https://jj.wd5.myworkdayjobs.com/en-US/JJ/job/"
 payload = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": ""}
 
 
@@ -44,18 +45,22 @@ def today_jobs(POST_url, ind_job_url,payload):
         r = requests.post(url, json=payload, headers=headers)
         data = r.json()
         for job in data["jobPostings"]:
-            jobs.append({
-                "title": job.get("title"),
-                "location": job.get("locationsText", ""),
-                "postedOn": job.get("postedOn", ""),
-                "url": ind_job_url+ job['externalPath'].split('/')[-1]
-                })
+            try:
+                jobs.append({
+                    "title": job.get("title"),
+                    "location": job.get("locationsText", ""),
+                    "postedOn": job.get("postedOn", ""),
+                    "url": ind_job_url+ job['externalPath'].split('/')[-1]
+                    })
+            except:
+                pass
         
 
     pd.set_option('display.max_colwidth', 800)
     df = pd.DataFrame(jobs)
+    df.to_csv('C:\\Users\\Ben\\Box\\duke_bilbo\\MemberFolders\\Ben\\git_repos\\job_posting_emailer\\df.csv')
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
-    location = posted_recently[posted_recently["location"].str.contains('USA - Pennsylvania|USA - North Carolina|Location|USA - REMOTE', case=False, na=False)]
+    location = posted_recently[posted_recently["location"].str.contains('Pennsylvania|North Carolina|REMOTE', case=False, na=False)]
     return location
 
 import smtplib
@@ -69,7 +74,7 @@ def send_email_report(df):
         body = f"{len(df)} new job(s) posted today:\n\n" + "\n".join(df['title'].tolist())
 
     msg = EmailMessage()
-    msg['Subject'] = f"Merck Workday Jobs Report – {datetime.now().strftime('%Y-%m-%d')}"
+    msg['Subject'] = f"J&J Workday Jobs Report – {datetime.now().strftime('%Y-%m-%d')}"
     msg['From'] = 'bdev1238@gmail.com'
     msg['To'] = "benjamin.devlin@duke.edu"
     msg.set_content(body)
@@ -77,7 +82,7 @@ def send_email_report(df):
     # Attach CSV if there are new postings
     if not df.empty:
         csv_data = df.to_csv(index=False)
-        msg.add_attachment(csv_data, filename="merck_workday_jobs_today.csv", subtype="csv")
+        msg.add_attachment(csv_data, filename="jj_workday_jobs_today.csv", subtype="csv")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login('bdev1238@gmail.com', 'macw dblk fqmc qldy')
