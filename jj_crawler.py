@@ -58,7 +58,6 @@ def today_jobs(POST_url, ind_job_url,payload):
 
     pd.set_option('display.max_colwidth', 800)
     df = pd.DataFrame(jobs)
-    df.to_csv('C:\\Users\\Ben\\Box\\duke_bilbo\\MemberFolders\\Ben\\git_repos\\job_posting_emailer\\df.csv')
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
     location = posted_recently[posted_recently["location"].str.contains('Pennsylvania|North Carolina|REMOTE', case=False, na=False)]
     return location

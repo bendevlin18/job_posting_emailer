@@ -59,7 +59,7 @@ def today_jobs(POST_url, ind_job_url,payload):
     pd.set_option('display.max_colwidth', 800)
     df = pd.DataFrame(jobs)
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
-    location = posted_recently[posted_recently["location"].str.contains('US: USA Remote|US: Research Triangle Park NC', case=False, na=False)]
+    location = posted_recently
     return location
 
 
