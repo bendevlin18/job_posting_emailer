@@ -44,16 +44,18 @@ def today_jobs(POST_url, ind_job_url,payload):
         r = requests.post(url, json=payload, headers=headers)
         data = r.json()
         for job in data["jobPostings"]:
-            jobs.append({
-                "title": job.get("title"),
-                "location": job.get("locationsText", ""),
-                "postedOn": job.get("postedOn", ""),
-                "url": ind_job_url+ job['externalPath'].split('/')[-1]
-                })
-        
+            titles = np.append(titles, job.get('title'))
+            location = np.append(location, job.get("locationsText", ""))
+            postedOn = np.append(postedOn, job.get('postedOn'))
+
+            try:
+                externalURL = np.append(externalURL, ind_job_url+ job['externalPath'].split('/')[-1])
+            except:
+                externalURL = np.append(externalURL, 'not avail')
 
     pd.set_option('display.max_colwidth', 800)
-    df = pd.DataFrame(jobs)
+    jobs_dict = dict(zip(['location', 'postedOn', 'titles', 'externalURL'], [location, postedOn, titles, externalURL]))
+    df = pd.DataFrame(jobs_dict)
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
     location = posted_recently[posted_recently["location"].str.contains('Pennsylvania|North Carolina|Locations', case=False, na=False)]
     return location
