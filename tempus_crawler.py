@@ -28,7 +28,11 @@ def today_jobs(POST_url, ind_job_url,payload):
     r = requests.post(url, json=payload, headers=headers)
 
     offsets = np.arange(0, r.json()['total'], 20)
-    jobs = []
+    titles = []
+    location = []
+    postedOn = []
+    externalURL = []
+
     for offset in offsets:
         
         url = POST_url
