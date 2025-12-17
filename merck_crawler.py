@@ -59,7 +59,7 @@ def today_jobs(POST_url, ind_job_url,payload):
         
 
     pd.set_option('display.max_colwidth', 800)
-    jobs_dict = dict(zip(['location', 'postedOn', 'titles', 'externalURL'], [location, postedOn, titles, externalURL]))
+    jobs_dict = dict(zip(['location', 'postedOn', 'title', 'externalURL'], [location, postedOn, titles, externalURL]))
     df = pd.DataFrame(jobs_dict)
     posted_recently = df[df["postedOn"].str.contains('Posted Today|Posted Yesterday', case=False, na=False)]
     location = posted_recently[posted_recently["location"].str.contains('USA - Pennsylvania|USA - North Carolina|Location|USA - REMOTE', case=False, na=False)]

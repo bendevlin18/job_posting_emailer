@@ -66,6 +66,7 @@ def today_jobs(POST_url, ind_job_url,payload):
     location = posted_recently[posted_recently["location"].str.contains('PA|NC|Locations', case=True, na=False)]
     return location
 
+import smtplib
 from email.message import EmailMessage
 from datetime import datetime
 
